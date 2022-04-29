@@ -197,7 +197,7 @@ final class CaptureOptionsUIViewController: UIViewController, CaptureSessionUIVi
     }
     
     let captureSessionInformation = CaptureSessionInformation(
-      ngrok: "f1f4-75-85-187-237",
+      ngrok: "f8fb-75-85-187-237",
       label: modelLabel,
       targetNumberOfSamples: targetNumberofSamplesInt
     )
@@ -208,6 +208,7 @@ final class CaptureOptionsUIViewController: UIViewController, CaptureSessionUIVi
   }
   
   func sessionComplete(_ sessionInfo: CaptureSessionInformation!) {
+    return
     print("call network stack here")
     print(sessionInfo.dataframes.count)
     print("here")
