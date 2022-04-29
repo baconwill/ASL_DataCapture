@@ -1,0 +1,9 @@
+version: "3.7"
+
+services:
+  db:
+    build: .
+    volumes:
+      - .:/usr/src
+    ports:
+      - "5555:5000"
