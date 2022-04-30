@@ -162,7 +162,6 @@ class CaptureSessionUIViewController: UIViewController, AVCaptureVideoDataOutput
       self.sessionManager.end(shouldReschedule: !sessionInfo.isSessionOver)
     }
     
-    print("\(self.dataframeBuffer.count), \(sessionInfo.dataframes.count)")
     if sessionInfo.isSessionOver {
       self.sessionDelegate?.sessionComplete(self.sessionInfo)
       self.stopCapture()

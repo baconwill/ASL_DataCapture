@@ -344,6 +344,9 @@ final class CaptureOptionsUIViewController: UIViewController, CaptureSessionUIVi
     let ngrok = CaptureSessionParameterStore.shared.ngrok
     guard CaptureSessionParameterStore.shared.shouldSendToServer else { return }
     
+    let label = sessionInfo.label
+    let count = sessionInfo.dataframes.count
+    
     // prepare json data
     let json: [String: Any] = [
       sessionInfo.label: sessionInfo.dataframes
@@ -362,13 +365,41 @@ final class CaptureOptionsUIViewController: UIViewController, CaptureSessionUIVi
     request.setValue("application/json", forHTTPHeaderField: "Accept")
     
     let task = URLSession.shared.dataTask(with: request) { data, response, error in
-      guard let data = data, error == nil else {
-        print(error?.localizedDescription ?? "No data")
+      if let err = error {
+        DispatchQueue.main.async {
+          let alertController = Self.createAlertView(
+            title: "Oops!",
+            msg: "Something went wrong: \(err.localizedDescription)")
+          self.present(alertController, animated: true)
+        }
         return
       }
-      let responseJSON = try? JSONSerialization.jsonObject(with: data, options: [])
-      if let responseJSON = responseJSON as? [String: Any] {
-        print("[data] -- \(responseJSON)")
+      
+      guard let data = data else {
+        DispatchQueue.main.async {
+          let alertController = Self.createAlertView(
+            title: "Oops!",
+            msg: "Something went wrong: no data in response")
+          self.present(alertController, animated: true)
+        }
+        return
+      }
+      
+      guard (try? JSONSerialization.jsonObject(with: data, options: []) as? [String: Any]) != nil else {
+        DispatchQueue.main.async {
+          let alertController = Self.createAlertView(
+            title: "Oops!",
+            msg: "Something went wrong: could not parse response")
+          self.present(alertController, animated: true)
+        }
+        return
+      }
+      
+      DispatchQueue.main.async {
+        let alertController = Self.createAlertView(
+          title: "Success!",
+          msg: "\(count) samples were uploaded to the server with label \"\(label)\"")
+        self.present(alertController, animated: true)
       }
     }
     
