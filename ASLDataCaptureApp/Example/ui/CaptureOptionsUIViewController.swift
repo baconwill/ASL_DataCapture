@@ -72,6 +72,10 @@ final class CaptureOptionsUIViewController: UIViewController, CaptureSessionUIVi
   private let samplingLabelCollectionView = CollectParameterUIView(label: "Model Label:")
   private let samplingCountCollectionView = CollectParameterUIView(label: "Number of Samples:")
   
+  // MARK: Network Information
+  private let networkTitleLabel = UILabel(frame: .zero)
+  private let ngrokCollectionView = CollectParameterUIView(label: "ngrok:")
+  
   private let startButton = UIButton(frame: .zero)
   
   // MARK: - UI Initialization
@@ -101,6 +105,11 @@ final class CaptureOptionsUIViewController: UIViewController, CaptureSessionUIVi
     samplingCountCollectionView.placeholder = "eg. 1, 10, 100"
   }
   
+  private func createNetworkInformation() {
+    self.contentView.addSubview(ngrokCollectionView)
+    ngrokCollectionView.placeholder = "eg. f1f4-75-85-187-237"
+  }
+  
   private func createStartButton() {
     self.contentView.addSubview(startButton)
     startButton.backgroundColor = .systemGreen
@@ -114,6 +123,7 @@ final class CaptureOptionsUIViewController: UIViewController, CaptureSessionUIVi
     self.view.backgroundColor = .systemBackground
     self.createContentView()
     self.createSamplingInformation()
+    self.createNetworkInformation()
     self.createStartButton()
   }
   
@@ -148,6 +158,10 @@ final class CaptureOptionsUIViewController: UIViewController, CaptureSessionUIVi
     self.setCollectionViewFrame(collect: self.samplingCountCollectionView, yOffset: &yOffset)
   }
   
+  private func updateNetworkInformationFrames(yOffset: inout CGFloat) {
+    self.setCollectionViewFrame(collect: self.ngrokCollectionView, yOffset: &yOffset)
+  }
+  
   private func updateStartButtonFrame() {
     
     let xOffset = (self.contentView.frame.width - Constants.BUTTON_SIZE.width) / 2
@@ -163,7 +177,7 @@ final class CaptureOptionsUIViewController: UIViewController, CaptureSessionUIVi
     
     var yOffset: CGFloat = 0 // Tracks the Y offset when layout the current component
     self.updateSampleInformationFrames(yOffset: &yOffset)
-    
+    self.updateNetworkInformationFrames(yOffset: &yOffset)
     self.updateStartButtonFrame()
   }
   
@@ -196,8 +210,16 @@ final class CaptureOptionsUIViewController: UIViewController, CaptureSessionUIVi
       return
     }
     
+    guard let ngrok = self.samplingLabelCollectionView.text, !ngrok.isEmpty else {
+      let alertController = Self.createAlertView(
+        title: "Missing Ngrok",
+        msg: "You must specify the data collection server")
+      self.present(alertController, animated: true)
+      return
+    }
+    
     let captureSessionInformation = CaptureSessionInformation(
-      ngrok: "f8fb-75-85-187-237",
+      ngrok: ngrok,
       label: modelLabel,
       targetNumberOfSamples: targetNumberofSamplesInt
     )
