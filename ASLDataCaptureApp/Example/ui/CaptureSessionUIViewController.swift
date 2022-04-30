@@ -49,7 +49,6 @@ class CaptureSessionUIViewController: UIViewController, AVCaptureVideoDataOutput
   private var camera: Camera?
   private var tracker: HandTracker?
   
-
   private var model: Model?
   
   fileprivate var dataframeBuffer = [[Float]]()
@@ -59,8 +58,8 @@ class CaptureSessionUIViewController: UIViewController, AVCaptureVideoDataOutput
   private var sizeVal: CGFloat = 3
   private var shouldDrawDebugPoints: Bool = true
   private var pointsLayer = CAShapeLayer()
-  private var previewLayer: AVCaptureVideoPreviewLayer?
-  private var viewSize = CGSize()
+  
+  private let sampleLabel = UILabel(frame: .zero)
   
   public weak var sessionDelegate: CaptureSessionUIViewControllerDelegate? 
   
@@ -101,11 +100,18 @@ class CaptureSessionUIViewController: UIViewController, AVCaptureVideoDataOutput
     
     self.model = try? Model()
     
-    self.viewSize = self.view.frame.size
+    self.view.addSubview(sampleLabel)
+    self.sampleLabel.textAlignment = .center
+    self.sampleLabel.font = UIFont.systemFont(ofSize: 20)
+    self.sampleLabel.backgroundColor = UIColor.systemBackground.withAlphaComponent(0.4)
   }
   
-//  private func setupVideoPreview() {
-      
+  override func viewDidLayoutSubviews() {
+    super.viewDidLayoutSubviews()
+    
+    self.sampleLabel.frame = CGRect(x: 0, y: self.view.frame.height - 100,
+                                    width: self.view.frame.width, height: 100)
+  }
   
   private func stopCapture() {
     self.camera?.stop()
@@ -142,6 +148,7 @@ class CaptureSessionUIViewController: UIViewController, AVCaptureVideoDataOutput
     
     DispatchQueue.main.async { [weak self] in
       self?.drawDebugPoints(landmarks: landmarks)
+      self?.showDebugLabel()
     }
   }
   
@@ -265,6 +272,10 @@ class CaptureSessionUIViewController: UIViewController, AVCaptureVideoDataOutput
     
     pointsLayer.path = combinedPath
     self.pointsLayer.didChangeValue(for: \.path)
+  }
+  
+  private func showDebugLabel() {
+    self.sampleLabel.text = "\(self.sessionInfo.dataframes.count) out of \(self.sessionInfo.targetNumberOfSamples)"
   }
   
 }
