@@ -385,11 +385,21 @@ final class CaptureOptionsUIViewController: UIViewController, CaptureSessionUIVi
         return
       }
       
-      guard (try? JSONSerialization.jsonObject(with: data, options: []) as? [String: Any]) != nil else {
+      guard let resp = try? JSONSerialization.jsonObject(with: data, options: []) as? [String: Any] else {
         DispatchQueue.main.async {
           let alertController = Self.createAlertView(
             title: "Oops!",
             msg: "Something went wrong: could not parse response")
+          self.present(alertController, animated: true)
+        }
+        return
+      }
+      
+      guard let status = resp["status"] as? String, status == "success" else {
+        DispatchQueue.main.async {
+          let alertController = Self.createAlertView(
+            title: "Oops!",
+            msg: "Something went wrong: server error, check python logs")
           self.present(alertController, animated: true)
         }
         return
