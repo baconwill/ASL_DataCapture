@@ -46,11 +46,6 @@ class CaptureSessionUIViewController: UIViewController, AVCaptureVideoDataOutput
   
   private var sessionInfo: CaptureSessionInformation!
   
-  private var camera: Camera?
-  private var tracker: HandTracker?
-  
-  private var model: Model?
-  
   fileprivate var dataframeBuffer = [[Float]]()
   private var sessionManager = SessionManager()
   
@@ -85,20 +80,15 @@ class CaptureSessionUIViewController: UIViewController, AVCaptureVideoDataOutput
       self?.sessionManager.start()
     }
     
-    camera = Camera()
-    camera?.setSampleBufferDelegate(self)
-    camera?.start()
+    CameraManager.shared.camera.setSampleBufferDelegate(self)
+    CameraManager.shared.camera.start()
     
     view.layer.addSublayer(pointsLayer)
     pointsLayer.frame = view.frame
     pointsLayer.strokeColor = UIColor.green.cgColor
     pointsLayer.lineCap = .round
     
-    tracker = HandTracker()
-    tracker?.startGraph()
-    tracker?.delegate = self
-    
-    self.model = try? Model()
+    CameraManager.shared.tracker.delegate = self
     
     self.view.addSubview(sampleLabel)
     self.sampleLabel.textAlignment = .center
@@ -114,10 +104,10 @@ class CaptureSessionUIViewController: UIViewController, AVCaptureVideoDataOutput
   }
   
   private func stopCapture() {
-    self.camera?.stop()
-    self.camera = nil
-    self.tracker?.delegate = nil
-    self.tracker = nil
+    CameraManager.shared.camera.removeSampleBufferDelegate()
+    CameraManager.shared.camera.stop()
+    
+    CameraManager.shared.tracker.delegate = nil
     
     DispatchQueue.main.async {
       self.dismiss(animated: true)
@@ -128,7 +118,7 @@ class CaptureSessionUIViewController: UIViewController, AVCaptureVideoDataOutput
   
   func captureOutput(_ output: AVCaptureOutput, didOutput sampleBuffer: CMSampleBuffer, from connection: AVCaptureConnection) {
     let pixelBuffer = CMSampleBufferGetImageBuffer(sampleBuffer)
-    tracker?.processVideoFrame(pixelBuffer)
+    CameraManager.shared.tracker.processVideoFrame(pixelBuffer)
     
     DispatchQueue.main.async {
       self.imageView.image = UIImage(ciImage: CIImage(cvPixelBuffer: pixelBuffer!))

@@ -28,6 +28,10 @@ class Camera: NSObject {
     output.setSampleBufferDelegate(delegate, queue: .main)
   }
   
+  func removeSampleBufferDelegate() {
+    output.setSampleBufferDelegate(nil, queue: .main)
+  }
+  
   func start() {
     session.startRunning()
   }

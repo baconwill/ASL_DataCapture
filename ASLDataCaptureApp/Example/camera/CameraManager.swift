@@ -12,7 +12,7 @@ private typealias Model = unclassified2d
 
 class CameraManager {
   
-  private static let shared = CameraManager()
+  static let shared = CameraManager()
   
   let camera: Camera
   
