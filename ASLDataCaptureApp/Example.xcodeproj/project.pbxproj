@@ -17,6 +17,7 @@
 		6B596467281C6A100020015B /* CaptureOptionsUIViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6B596466281C6A100020015B /* CaptureOptionsUIViewController.swift */; };
 		6B59646A281C6A7D0020015B /* CaptureSessionInformation.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6B596469281C6A7D0020015B /* CaptureSessionInformation.swift */; };
 		6B59646C281C81500020015B /* CaptureSessionUIViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6B59646B281C81500020015B /* CaptureSessionUIViewController.swift */; };
+		6B59646F281DA5920020015B /* CaptureSessionParameterStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6B59646E281DA5920020015B /* CaptureSessionParameterStore.swift */; };
 		6B7B098A28162D690036E6DE /* unclassified_model3.mlmodel in Sources */ = {isa = PBXBuildFile; fileRef = 6B7B098928162D690036E6DE /* unclassified_model3.mlmodel */; };
 /* End PBXBuildFile section */
 
@@ -47,6 +48,7 @@
 		6B596466281C6A100020015B /* CaptureOptionsUIViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CaptureOptionsUIViewController.swift; sourceTree = "<group>"; };
 		6B596469281C6A7D0020015B /* CaptureSessionInformation.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CaptureSessionInformation.swift; sourceTree = "<group>"; };
 		6B59646B281C81500020015B /* CaptureSessionUIViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CaptureSessionUIViewController.swift; sourceTree = "<group>"; };
+		6B59646E281DA5920020015B /* CaptureSessionParameterStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CaptureSessionParameterStore.swift; sourceTree = "<group>"; };
 		6B7B098928162D690036E6DE /* unclassified_model3.mlmodel */ = {isa = PBXFileReference; lastKnownFileType = file.mlmodel; path = unclassified_model3.mlmodel; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
@@ -82,6 +84,7 @@
 		37EEA40B2435143600750CDB /* Example */ = {
 			isa = PBXGroup;
 			children = (
+				6B59646D281DA56B0020015B /* storage */,
 				6B596468281C6A640020015B /* model */,
 				6B596465281C697F0020015B /* ui */,
 				6B596463281C69270020015B /* models */,
@@ -127,6 +130,14 @@
 				6B596469281C6A7D0020015B /* CaptureSessionInformation.swift */,
 			);
 			path = model;
+			sourceTree = "<group>";
+		};
+		6B59646D281DA56B0020015B /* storage */ = {
+			isa = PBXGroup;
+			children = (
+				6B59646E281DA5920020015B /* CaptureSessionParameterStore.swift */,
+			);
+			path = storage;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -208,6 +219,7 @@
 				6B7B098A28162D690036E6DE /* unclassified_model3.mlmodel in Sources */,
 				37EEA40D2435143600750CDB /* AppDelegate.swift in Sources */,
 				6B59646028179BB30020015B /* unclassified2d.mlmodel in Sources */,
+				6B59646F281DA5920020015B /* CaptureSessionParameterStore.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -346,7 +358,7 @@
 				CLANG_ENABLE_MODULES = YES;
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
-				DEVELOPMENT_TEAM = 825S5WTJYT;
+				DEVELOPMENT_TEAM = 3D978X2G8M;
 				ENABLE_BITCODE = NO;
 				FRAMEWORK_SEARCH_PATHS = (
 					"$(inherited)",
@@ -376,7 +388,7 @@
 				CLANG_ENABLE_MODULES = YES;
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
-				DEVELOPMENT_TEAM = 825S5WTJYT;
+				DEVELOPMENT_TEAM = 3D978X2G8M;
 				ENABLE_BITCODE = NO;
 				FRAMEWORK_SEARCH_PATHS = (
 					"$(inherited)",

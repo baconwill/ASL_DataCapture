@@ -10,7 +10,6 @@ import Foundation
 
 public struct CaptureSessionInformation {
   
-  var ngrok: String
   var label: String
   var targetNumberOfSamples: Int
   

@@ -10,36 +10,32 @@ import Foundation
 import UIKit
 import AVFoundation
 
-private class CollectParameterUIView: UIView {
+private class BaseCollectParameterUIView<CollectionView: UIView>: UIView {
   
-  private static let LABEL_TO_TEXTFIELD_MARGIN: CGFloat = 8
+  var spacing: CGFloat {
+    return 12
+  }
   
-  private let labelView = UILabel(frame: .zero)
-  private let textView = UITextField(frame: .zero)
+  var shouldAddBorder: Bool {
+    return true
+  }
+  
+  let labelView = UILabel(frame: .zero)
+  let collectionView = CollectionView(frame: .zero)
   
   convenience init(label: String) {
     self.init(frame: .zero)
     
+    if self.shouldAddBorder {
+      self.layer.cornerRadius = 4
+      self.layer.borderWidth = 1
+      self.layer.borderColor = UIColor.systemGray.cgColor
+    }
+    
     self.addSubview(labelView)
     self.labelView.text = label
     
-    self.addSubview(textView)
-    self.textView.layer.cornerRadius = 4
-    self.textView.layer.borderWidth = 1
-    self.textView.layer.borderColor = UIColor.systemGray.cgColor
-    
-    self.textView.leftView = UIView(frame: CGRect(x: 0, y: 0, width: 8, height: 10))
-    self.textView.leftViewMode = .always
-  }
-  
-  var text: String? {
-    return textView.text
-  }
-  
-  var placeholder: String = "" {
-    didSet {
-      self.textView.placeholder = self.placeholder
-    }
+    self.addSubview(collectionView)
   }
   
   override func layoutSubviews() {
@@ -48,18 +44,82 @@ private class CollectParameterUIView: UIView {
     let availableSize = CGSize(width: .greatestFiniteMagnitude, height: self.frame.height)
     let requiredLabelWidth = self.labelView.sizeThatFits(availableSize).width
     
-    self.labelView.frame = CGRect(x: 0, y: 0, width: requiredLabelWidth, height: self.frame.height)
-    let textViewWidth = self.frame.width - requiredLabelWidth - Self.LABEL_TO_TEXTFIELD_MARGIN
-    self.textView.frame = CGRect(x: self.frame.width - textViewWidth, y: 0, width: textViewWidth, height: self.frame.height)
+    self.labelView.frame = CGRect(x: self.spacing, y: 0,
+                                  width: requiredLabelWidth, height: self.frame.height)
+    let textViewWidth = self.frame.width - requiredLabelWidth - 2 * self.spacing
+    self.setCollectionFrame(suggestedWidth: textViewWidth)
+  }
+  
+  func setCollectionFrame(suggestedWidth: CGFloat) {
+    self.collectionView.frame = CGRect(x: self.frame.width - suggestedWidth,
+                                       y: 0, width: suggestedWidth, height: self.frame.height)
+  }
+  
+  func contains(_ collectionView: CollectionView) -> Bool {
+    return collectionView === self.collectionView
   }
   
   @discardableResult
   override func resignFirstResponder() -> Bool {
-    if self.textView.isFirstResponder {
-      return self.textView.resignFirstResponder()
+    if self.collectionView.isFirstResponder {
+      return self.collectionView.resignFirstResponder()
     }
     return super.resignFirstResponder()
   }
+  
+}
+
+private class CollectBoolParameterUIView: BaseCollectParameterUIView<UISwitch> {
+  
+  override var spacing: CGFloat {
+     return 0
+  }
+  
+  override var shouldAddBorder: Bool {
+    return false
+  }
+  
+  var isOn: Bool {
+    get {
+      return collectionView.isOn
+    }
+    set {
+      collectionView.setOn(newValue, animated: false)
+    }
+  }
+
+  func addTarget(_ target: Any?, action: Selector, for event: UIControl.Event) {
+    self.collectionView.addTarget(target, action: action, for: event)
+  }
+
+  override func setCollectionFrame(suggestedWidth: CGFloat) {
+    let yOffset = (self.frame.height - self.collectionView.frame.height) / 2
+    let xOffset = self.frame.width - self.collectionView.frame.width - self.spacing
+    self.collectionView.frame.origin = CGPoint(x: xOffset, y: yOffset)
+  }
+}
+
+private class CollectTextParameterUIView: BaseCollectParameterUIView<UITextField> {
+
+  var text: String? {
+    get {
+      return collectionView.text
+    }
+    set {
+      self.collectionView.text = newValue
+    }
+  }
+  
+  var placeholder: String = "" {
+    didSet {
+      self.collectionView.placeholder = self.placeholder
+    }
+  }
+  
+  func addTarget(_ target: Any?, action: Selector, for event: UIControl.Event) {
+    collectionView.addTarget(target, action: action, for: event)
+  }
+  
 }
 
 final class CaptureOptionsUIViewController: UIViewController, CaptureSessionUIViewControllerDelegate {
@@ -70,12 +130,13 @@ final class CaptureOptionsUIViewController: UIViewController, CaptureSessionUIVi
   
   // MARK: Sampling Information
   private let samplingTitleLabel = UILabel(frame: .zero)
-  private let samplingLabelCollectionView = CollectParameterUIView(label: "Model Label:")
-  private let samplingCountCollectionView = CollectParameterUIView(label: "Number of Samples:")
+  private let samplingLabelCollectionView = CollectTextParameterUIView(label: "Model Label:")
+  private let samplingCountCollectionView = CollectTextParameterUIView(label: "Number of Samples:")
   
   // MARK: Network Information
   private let networkTitleLabel = UILabel(frame: .zero)
-  private let ngrokCollectionView = CollectParameterUIView(label: "ngrok:")
+  private let sendToNetworkCollectionView = CollectBoolParameterUIView(label: "Send to server:")
+  private let ngrokCollectionView = CollectTextParameterUIView(label: "ngrok:")
   
   private let startButton = UIButton(frame: .zero)
   
@@ -107,8 +168,20 @@ final class CaptureOptionsUIViewController: UIViewController, CaptureSessionUIVi
   }
   
   private func createNetworkInformation() {
+    self.contentView.addSubview(networkTitleLabel)
+    self.configureSectionTitleView(label: networkTitleLabel)
+    networkTitleLabel.text = "Network Information"
+    
+    self.contentView.addSubview(sendToNetworkCollectionView)
+    sendToNetworkCollectionView.isOn = CaptureSessionParameterStore.shared.shouldSendToServer
+    sendToNetworkCollectionView.addTarget(self, action: #selector(switchValueDidChange), for: .valueChanged)
+    
     self.contentView.addSubview(ngrokCollectionView)
     ngrokCollectionView.placeholder = "eg. f1f4-75-85-187-237"
+    ngrokCollectionView.text = CaptureSessionParameterStore.shared.ngrok
+    ngrokCollectionView.addTarget(self, action: #selector(textFieldDidChange), for: .editingChanged)
+    
+    updateNetworkUIBaseOnState()
   }
   
   private func createStartButton() {
@@ -128,6 +201,16 @@ final class CaptureOptionsUIViewController: UIViewController, CaptureSessionUIVi
     self.createStartButton()
   }
   
+  // MARK: - UI State
+  
+  private func updateNetworkUIBaseOnState() {
+    if CaptureSessionParameterStore.shared.shouldSendToServer {
+      ngrokCollectionView.alpha = 1
+    } else {
+      ngrokCollectionView.alpha = 0.5
+    }
+  }
+  
   // MARK: - UI Frame Updates
   
   private func setSectionTitleFrame(section: UILabel, yOffset: inout CGFloat) {
@@ -137,10 +220,10 @@ final class CaptureOptionsUIViewController: UIViewController, CaptureSessionUIVi
     yOffset += Constants.SECTION_TITLE_HEIGHT
   }
   
-  private func setCollectionViewFrame(collect: CollectParameterUIView, yOffset: inout CGFloat) {
+  private func setCollectionViewFrame<T: UIView>(collect: BaseCollectParameterUIView<T>, yOffset: inout CGFloat) {
     collect.frame = CGRect(x: 0, y: yOffset,
                            width: self.contentView.bounds.width,
-                           height: Constants.TEXT_FIELD_HEIGHT).insetBy(dx: 8, dy: 0)
+                           height: Constants.TEXT_FIELD_HEIGHT)
     yOffset += Constants.TEXT_FIELD_HEIGHT
   }
   
@@ -160,6 +243,10 @@ final class CaptureOptionsUIViewController: UIViewController, CaptureSessionUIVi
   }
   
   private func updateNetworkInformationFrames(yOffset: inout CGFloat) {
+    self.setSectionTitleFrame(section: self.networkTitleLabel, yOffset: &yOffset)
+    yOffset += 8
+    self.setCollectionViewFrame(collect: self.sendToNetworkCollectionView, yOffset: &yOffset)
+    yOffset += 8
     self.setCollectionViewFrame(collect: self.ngrokCollectionView, yOffset: &yOffset)
   }
   
@@ -178,15 +265,32 @@ final class CaptureOptionsUIViewController: UIViewController, CaptureSessionUIVi
     
     var yOffset: CGFloat = 0 // Tracks the Y offset when layout the current component
     self.updateSampleInformationFrames(yOffset: &yOffset)
+    yOffset += 16
     self.updateNetworkInformationFrames(yOffset: &yOffset)
     self.updateStartButtonFrame()
   }
   
   // MARK: - Handle Interaction
+  @objc func textFieldDidChange(_ sender: UITextField) {
+    if self.ngrokCollectionView.contains(sender),
+       let ngrok = sender.text {
+      CaptureSessionParameterStore.shared.ngrok = ngrok
+    }
+  }
+  
+  @objc func switchValueDidChange(_ sender: UISwitch) {
+    if self.sendToNetworkCollectionView.contains(sender) {
+      CaptureSessionParameterStore.shared.shouldSendToServer = sender.isOn
+      updateNetworkUIBaseOnState()
+      self.view.setNeedsLayout()
+    }
+  }
+  
   @objc func handleContentViewTapped() {
     [
       self.samplingLabelCollectionView,
-      self.samplingCountCollectionView
+      self.samplingCountCollectionView,
+      self.ngrokCollectionView,
     ]
     .forEach { $0.resignFirstResponder()}
   }
@@ -211,16 +315,21 @@ final class CaptureOptionsUIViewController: UIViewController, CaptureSessionUIVi
       return
     }
     
-    guard let ngrok = self.samplingLabelCollectionView.text, !ngrok.isEmpty else {
-      let alertController = Self.createAlertView(
-        title: "Missing Ngrok",
-        msg: "You must specify the data collection server")
-      self.present(alertController, animated: true)
-      return
+    // Do we have the proper ngrok information
+    if CaptureSessionParameterStore.shared.shouldSendToServer {
+      // if we are planning to send it to the server validate the ngrok parameter
+      guard let ngrok = self.ngrokCollectionView.text, !ngrok.isEmpty else {
+        let alertController = Self.createAlertView(
+          title: "Missing Ngrok",
+          msg: "You must specify the data collection server")
+        self.present(alertController, animated: true)
+        return
+      }
     }
     
+    
+    
     let captureSessionInformation = CaptureSessionInformation(
-      ngrok: ngrok,
       label: modelLabel,
       targetNumberOfSamples: targetNumberofSamplesInt
     )
@@ -232,12 +341,8 @@ final class CaptureOptionsUIViewController: UIViewController, CaptureSessionUIVi
   }
   
   func sessionComplete(_ sessionInfo: CaptureSessionInformation!) {
-    print("call network stack here")
-    print(sessionInfo.dataframes.count)
-    print("here")
-    
-//    print(sessionInfo.dataframes)
-    
+    let ngrok = CaptureSessionParameterStore.shared.ngrok
+    guard CaptureSessionParameterStore.shared.shouldSendToServer else { return }
     
     // prepare json data
     let json: [String: Any] = [
@@ -247,7 +352,7 @@ final class CaptureOptionsUIViewController: UIViewController, CaptureSessionUIVi
     let jsonData = try? JSONSerialization.data(withJSONObject: json)
     
     // create post request
-    let url = URL(string: "https://\(sessionInfo.ngrok).ngrok.io/save")!
+    let url = URL(string: "https://\(ngrok).ngrok.io/save")!
     var request = URLRequest(url: url)
     request.httpMethod = "POST"
     

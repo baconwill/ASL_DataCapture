@@ -62,8 +62,6 @@ class CaptureSessionUIViewController: UIViewController, AVCaptureVideoDataOutput
   private var previewLayer: AVCaptureVideoPreviewLayer?
   private var viewSize = CGSize()
   
-    
-  
   public weak var sessionDelegate: CaptureSessionUIViewControllerDelegate? 
   
   convenience init(sessionInfo: CaptureSessionInformation) {
@@ -88,27 +86,14 @@ class CaptureSessionUIViewController: UIViewController, AVCaptureVideoDataOutput
       self?.sessionManager.start()
     }
     
-//    self.view.layer.addSublayer(pointsLayer)
-//    pointsLayer.frame = view.frame
-//    pointsLayer.strokeColor = UIColor.green.cgColor
-//    pointsLayer.lineCap = .round
-//    setupVideoPreview()
     camera = Camera()
     camera?.setSampleBufferDelegate(self)
     camera?.start()
     
-    previewLayer = AVCaptureVideoPreviewLayer(session: camera!.session)
-    guard let previewLayer = previewLayer else { return }
-    view.layer.addSublayer(previewLayer)
-//        self.view.layer.addSublayer(previewLayer)
-    previewLayer.frame = view.frame
     view.layer.addSublayer(pointsLayer)
-    
-//        self.view.layer.addSublayer(pointsLayer)
     pointsLayer.frame = view.frame
     pointsLayer.strokeColor = UIColor.green.cgColor
     pointsLayer.lineCap = .round
-    
     
     tracker = HandTracker()
     tracker?.startGraph()
@@ -154,12 +139,6 @@ class CaptureSessionUIViewController: UIViewController, AVCaptureVideoDataOutput
     if sessionManager.shouldCollect {
       self.collect(landmarks: landmarks)
     }
-//    AudioServicesPlaySystemSound(SystemSoundID(1110))
-//    sleep(1)
-//    DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
-//      AudioServicesPlaySystemSound(SystemSoundID(1112))
-//    }
-//    AudioServicesPlaySystemSound(SystemSoundID(1112))
     
     DispatchQueue.main.async { [weak self] in
       self?.drawDebugPoints(landmarks: landmarks)
@@ -194,35 +173,100 @@ class CaptureSessionUIViewController: UIViewController, AVCaptureVideoDataOutput
   
   private func drawDebugPoints(landmarks: [Landmark]) {
     guard shouldDrawDebugPoints else { return }
-    var displayedPoints: [CGPoint] = []
-    var z_vals: [CGFloat] = []
+    guard let image = self.imageView.image else { return }
     
-    for (_, lm) in landmarks.enumerated()
-    {
-//            print("\(num): (\(lm.x), \(lm.y)")
-//            print("w: \(w), h: \(h)")
-//      print("width: \(self.view.frame.size.width)")
-//      print("height: \(self.view.frame.size.height)")
-      let x = CGFloat(lm.x) * self.view.frame.size.width
-      let y = CGFloat(lm.y) * self.view.frame.size.height
-      let point = CGPoint(x: x, y: y)
-      displayedPoints.append(point)
-      let z = CGFloat(lm.z)
-//            let zf = Float32(lm.z)
-//            print("CGFloat: \(z), Float32: \(zf)")
-      z_vals.append(z)
+    // the landmarks are in the image's coordinate system
+    // the task here is to convert them to the imageview's coordinate system
+  
+    var imageToViewScale: CGFloat {
+      
+      switch self.imageView.contentMode {
+      case .scaleAspectFill:
+        // if the contentMode is "aspectFill", meaning part of the image
+        // can get cropped in order to fill the whole image view.
+        //
+        // This can happen in two ways:
+        //  - the image is scale such that the image.width matches imageview.width
+        //  OR
+        //  - the image is scale such that the image.height matches imageview.height
+        
+        // suppose the scaling is based on the width
+        var scale = image.size.width / self.imageView.bounds.width
+        let imageHeightInViewCoords = image.size.height / scale
+        
+        if imageHeightInViewCoords >= self.imageView.bounds.height {
+          // When scaled to match the width, the height will get cropped,
+          // and the image will "fit" in the view completely
+          return scale
+        }
+        
+        // the sanity check here that the width is larger than the
+        // imageview width when scaled based on matching the heights
+        // is probably unnecessary since one of them has to work...
+        // but really, why not just check
+        scale =  image.size.height / self.imageView.bounds.height
+        
+        let imageWidthInViewCoords = image.size.width / scale
+        if imageWidthInViewCoords >= self.imageView.bounds.width {
+          // When scaled to match the height, the width will get cropped,
+          // and the image will "fit" in the view completely
+          return scale
+        }
+      case .scaleAspectFit:
+        // if the contentMode is "aspectFit", meaning the image will be
+        // displayed in its entirity, the remaineder will be transaparent
+        // This can happen in two ways:
+        //  - the image is scale such that the image.width matches imageview.width
+        //  OR
+        //  - the image is scale such that the image.height matches imageview.height
+        
+        // suppose the scaling is based on the width
+        var scale = image.size.width / self.imageView.bounds.width
+        let imageHeightInViewCoords = image.size.height / scale
+        
+        if imageHeightInViewCoords <= self.imageView.bounds.height {
+          // When scaled to match the width, the height will not get cropped
+          return scale
+        }
+        
+        scale =  image.size.height / self.imageView.bounds.height
+        let imageWidthInViewCoords = image.size.width / scale
+        if imageWidthInViewCoords <= self.imageView.bounds.width {
+          // When scaled to match the height, the width will not get cropped,
+          return scale
+        }
+      default:
+        break
+      }
+      
+      return -1
     }
+    
+    guard imageToViewScale != -1 else { return }
+    
+    // Compute the offsets
+    
+    let xOffset = (self.imageView.bounds.width - image.size.width / imageToViewScale) / 2
+    let yOffset = (self.imageView.bounds.height - image.size.height / imageToViewScale) / 2
     
     let combinedPath = CGMutablePath()
-    for (_, point) in displayedPoints.enumerated() {
-      let rect = CGRect(x: point.x, y: point.y, width: sizeVal, height: sizeVal)
-      let dotPath = UIBezierPath(ovalIn: rect)
-      combinedPath.addPath(dotPath.cgPath)
-    }
+    
+    landmarks
+      .compactMap { lm -> CGRect in
+        // The landmarks are in the image coordinate system, we want to translate them to
+        // the imageview's coordinate system
+        let x = (CGFloat(lm.x) * image.size.width) / imageToViewScale + xOffset
+        let y = (CGFloat(lm.y) * image.size.height) / imageToViewScale + yOffset
+        return CGRect(x: x, y: y, width: sizeVal, height: sizeVal)
+      }
+      .forEach { rect in
+        let dotPath = UIBezierPath(ovalIn: rect)
+        combinedPath.addPath(dotPath.cgPath)
+      }
+    
     pointsLayer.path = combinedPath
     self.pointsLayer.didChangeValue(for: \.path)
   }
   
 }
 
-//CaptureSessionInformation
