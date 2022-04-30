@@ -8,6 +8,7 @@
 
 import Foundation
 import UIKit
+import AVFoundation
 
 private class CollectParameterUIView: UIView {
   
@@ -203,6 +204,7 @@ final class CaptureOptionsUIViewController: UIViewController, CaptureSessionUIVi
     )
     
     let vc = CaptureSessionUIViewController(sessionInfo: captureSessionInformation)
+    vc.modalPresentationStyle = .fullScreen
     vc.sessionDelegate = self
     self.present(vc, animated: true)
   }

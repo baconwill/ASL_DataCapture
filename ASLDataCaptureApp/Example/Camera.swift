@@ -19,7 +19,7 @@ class Camera: NSObject {
     output.videoSettings = [kCVPixelBufferPixelFormatTypeKey as String : kCVPixelFormatType_32BGRA]
     session.addInput(input)
     session.addOutput(output)
-    session.sessionPreset = .photo
+    session.sessionPreset = AVCaptureSession.Preset.high
     session.connections[0].videoOrientation = .portrait
     session.connections[0].isVideoMirrored = true
   }

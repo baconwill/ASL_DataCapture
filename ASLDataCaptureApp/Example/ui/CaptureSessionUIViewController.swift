@@ -17,6 +17,28 @@ protocol CaptureSessionUIViewControllerDelegate: NSObjectProtocol {
   func sessionComplete(_ sessionInfo: CaptureSessionInformation!)
 }
 
+class SessionManager {
+  
+  private(set) var shouldCollect: Bool = false
+  
+  func start() {
+    shouldCollect = true
+    AudioServicesPlaySystemSound(SystemSoundID(1110))
+  }
+  
+  func end(shouldReschedule: Bool) {
+    shouldCollect = false
+    AudioServicesPlaySystemSound(SystemSoundID(1112))
+    if shouldReschedule {
+      DispatchQueue
+        .global()
+        .asyncAfter(deadline: DispatchTime.now() ) { [weak self] in
+          self?.start()
+      }
+    }
+  }
+}
+
 
 class CaptureSessionUIViewController: UIViewController, AVCaptureVideoDataOutputSampleBufferDelegate, TrackerDelegate {
   
@@ -30,12 +52,14 @@ class CaptureSessionUIViewController: UIViewController, AVCaptureVideoDataOutput
 
   private var model: Model?
   
-  private var dataframeBuffer = [[Float]]()
+  fileprivate var dataframeBuffer = [[Float]]()
+  private var sessionManager = SessionManager()
   
   // MARK: - Visual Feedback Debugging
   private var sizeVal: CGFloat = 3
   private var shouldDrawDebugPoints: Bool = true
   private var pointsLayer = CAShapeLayer()
+  private var previewLayer: AVCaptureVideoPreviewLayer?
   private var viewSize = CGSize()
   
     
@@ -60,14 +84,31 @@ class CaptureSessionUIViewController: UIViewController, AVCaptureVideoDataOutput
       self.imageView.bottomAnchor.constraint(equalTo: self.view.bottomAnchor),
     ])
     
-    self.view.layer.addSublayer(pointsLayer)
+    DispatchQueue.global().asyncAfter(deadline: .now() + 5) { [weak self] in
+      self?.sessionManager.start()
+    }
+    
+//    self.view.layer.addSublayer(pointsLayer)
+//    pointsLayer.frame = view.frame
+//    pointsLayer.strokeColor = UIColor.green.cgColor
+//    pointsLayer.lineCap = .round
+//    setupVideoPreview()
+    camera = Camera()
+    camera?.setSampleBufferDelegate(self)
+    camera?.start()
+    
+    previewLayer = AVCaptureVideoPreviewLayer(session: camera!.session)
+    guard let previewLayer = previewLayer else { return }
+    view.layer.addSublayer(previewLayer)
+//        self.view.layer.addSublayer(previewLayer)
+    previewLayer.frame = view.frame
+    view.layer.addSublayer(pointsLayer)
+    
+//        self.view.layer.addSublayer(pointsLayer)
     pointsLayer.frame = view.frame
     pointsLayer.strokeColor = UIColor.green.cgColor
     pointsLayer.lineCap = .round
     
-    camera = Camera()
-    camera?.setSampleBufferDelegate(self)
-    camera?.start()
     
     tracker = HandTracker()
     tracker?.startGraph()
@@ -77,6 +118,9 @@ class CaptureSessionUIViewController: UIViewController, AVCaptureVideoDataOutput
     
     self.viewSize = self.view.frame.size
   }
+  
+//  private func setupVideoPreview() {
+      
   
   private func stopCapture() {
     self.camera?.stop()
@@ -107,7 +151,16 @@ class CaptureSessionUIViewController: UIViewController, AVCaptureVideoDataOutput
     didOutputLandmarks landmarks: [Landmark]!,
     andHand handSize: CGSize
   ) {
-    self.collect(landmarks: landmarks)
+    if sessionManager.shouldCollect {
+      self.collect(landmarks: landmarks)
+    }
+//    AudioServicesPlaySystemSound(SystemSoundID(1110))
+//    sleep(1)
+//    DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
+//      AudioServicesPlaySystemSound(SystemSoundID(1112))
+//    }
+//    AudioServicesPlaySystemSound(SystemSoundID(1112))
+    
     DispatchQueue.main.async { [weak self] in
       self?.drawDebugPoints(landmarks: landmarks)
     }
@@ -127,6 +180,7 @@ class CaptureSessionUIViewController: UIViewController, AVCaptureVideoDataOutput
     if self.dataframeBuffer.count == sessionInfo.dataframeSize {
       sessionInfo.dataframes.append(self.dataframeBuffer)
       self.dataframeBuffer = []
+      self.sessionManager.end(shouldReschedule: !sessionInfo.isSessionOver)
     }
     
     print("\(self.dataframeBuffer.count), \(sessionInfo.dataframes.count)")
@@ -147,6 +201,8 @@ class CaptureSessionUIViewController: UIViewController, AVCaptureVideoDataOutput
     {
 //            print("\(num): (\(lm.x), \(lm.y)")
 //            print("w: \(w), h: \(h)")
+//      print("width: \(self.view.frame.size.width)")
+//      print("height: \(self.view.frame.size.height)")
       let x = CGFloat(lm.x) * self.view.frame.size.width
       let y = CGFloat(lm.y) * self.view.frame.size.height
       let point = CGPoint(x: x, y: y)
