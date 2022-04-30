@@ -210,7 +210,6 @@ final class CaptureOptionsUIViewController: UIViewController, CaptureSessionUIVi
   }
   
   func sessionComplete(_ sessionInfo: CaptureSessionInformation!) {
-    return
     print("call network stack here")
     print(sessionInfo.dataframes.count)
     print("here")
@@ -242,7 +241,7 @@ final class CaptureOptionsUIViewController: UIViewController, CaptureSessionUIVi
       }
       let responseJSON = try? JSONSerialization.jsonObject(with: data, options: [])
       if let responseJSON = responseJSON as? [String: Any] {
-        print(responseJSON)
+        print("[data] -- \(responseJSON)")
       }
     }
     
