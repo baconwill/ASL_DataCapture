@@ -8,6 +8,7 @@
 
 import Foundation
 import UIKit
+import AVFoundation
 
 private class CollectParameterUIView: UIView {
   
@@ -225,12 +226,12 @@ final class CaptureOptionsUIViewController: UIViewController, CaptureSessionUIVi
     )
     
     let vc = CaptureSessionUIViewController(sessionInfo: captureSessionInformation)
+    vc.modalPresentationStyle = .fullScreen
     vc.sessionDelegate = self
     self.present(vc, animated: true)
   }
   
   func sessionComplete(_ sessionInfo: CaptureSessionInformation!) {
-    return
     print("call network stack here")
     print(sessionInfo.dataframes.count)
     print("here")
@@ -262,7 +263,7 @@ final class CaptureOptionsUIViewController: UIViewController, CaptureSessionUIVi
       }
       let responseJSON = try? JSONSerialization.jsonObject(with: data, options: [])
       if let responseJSON = responseJSON as? [String: Any] {
-        print(responseJSON)
+        print("[data] -- \(responseJSON)")
       }
     }
     

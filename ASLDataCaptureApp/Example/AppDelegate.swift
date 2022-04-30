@@ -17,6 +17,9 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
     // Override point for customization after application launch.
     self.window = UIWindow(frame: UIScreen.main.bounds)
     
+//    let session = CaptureSessionInformation(ngrok: "f8fb-75-85-187-237", label: "A", targetNumberOfSamples: 100)
+//    let vc = CaptureSessionUIViewController(sessionInfo: session)
+    
     let vc = CaptureOptionsUIViewController()
     self.window?.rootViewController = vc
     self.window?.makeKeyAndVisible()
