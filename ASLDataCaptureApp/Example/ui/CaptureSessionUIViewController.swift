@@ -23,12 +23,12 @@ class SessionManager {
   
   func start() {
     shouldCollect = true
-    AudioServicesPlaySystemSound(SystemSoundID(1110))
+//    AudioServicesPlaySystemSound(SystemSoundID(1110))
   }
   
   func end(shouldReschedule: Bool) {
     shouldCollect = false
-    AudioServicesPlaySystemSound(SystemSoundID(1112))
+//    AudioServicesPlaySystemSound(SystemSoundID(1112))
     if shouldReschedule {
       DispatchQueue
         .global()
@@ -43,8 +43,12 @@ class SessionManager {
 class CaptureSessionUIViewController: UIViewController, AVCaptureVideoDataOutputSampleBufferDelegate, TrackerDelegate {
   
   private var imageView = UIImageView(frame: .zero)
+  private var currentImageViewWidth: CGFloat?
   
   private var sessionInfo: CaptureSessionInformation!
+  
+  // MARK: - Transform Input Data
+  private var shouldTranslateInputData: Bool = true
   
   fileprivate var dataframeBuffer = [[Float]]()
   private var sessionManager = SessionManager()
@@ -53,6 +57,8 @@ class CaptureSessionUIViewController: UIViewController, AVCaptureVideoDataOutput
   private var sizeVal: CGFloat = 3
   private var shouldDrawDebugPoints: Bool = true
   private var pointsLayer = CAShapeLayer()
+  
+  private var transformedPointsLayer = CAShapeLayer()
   
   private let sampleLabel = UILabel(frame: .zero)
   
@@ -69,6 +75,7 @@ class CaptureSessionUIViewController: UIViewController, AVCaptureVideoDataOutput
     self.view.addSubview(imageView)
     imageView.translatesAutoresizingMaskIntoConstraints = false
     imageView.contentMode = .scaleAspectFill
+    self.imageView.alpha = 0.1
     NSLayoutConstraint.activate([
       self.imageView.leadingAnchor.constraint(equalTo: self.view.leadingAnchor),
       self.imageView.trailingAnchor.constraint(equalTo: self.view.trailingAnchor),
@@ -87,6 +94,11 @@ class CaptureSessionUIViewController: UIViewController, AVCaptureVideoDataOutput
     pointsLayer.frame = view.frame
     pointsLayer.strokeColor = UIColor.green.cgColor
     pointsLayer.lineCap = .round
+    
+    view.layer.addSublayer(transformedPointsLayer)
+    transformedPointsLayer.frame = view.frame
+    transformedPointsLayer.strokeColor = UIColor.red.cgColor
+    transformedPointsLayer.lineCap = .round
     
     CameraManager.shared.tracker.delegate = self
     
@@ -122,6 +134,7 @@ class CaptureSessionUIViewController: UIViewController, AVCaptureVideoDataOutput
     
     DispatchQueue.main.async {
       self.imageView.image = UIImage(ciImage: CIImage(cvPixelBuffer: pixelBuffer!))
+      self.currentImageViewWidth = self.imageView.image?.size.width
     }
   }
   
@@ -138,6 +151,7 @@ class CaptureSessionUIViewController: UIViewController, AVCaptureVideoDataOutput
     
     DispatchQueue.main.async { [weak self] in
       self?.drawDebugPoints(landmarks: landmarks)
+      self?.drawDebugPoints2(landmarks: landmarks)
       self?.showDebugLabel()
     }
   }
@@ -150,8 +164,53 @@ class CaptureSessionUIViewController: UIViewController, AVCaptureVideoDataOutput
   }
   
   // MARK: Data Collection
+  private func transformData(landmarks: [Landmark]) -> [Float]? {
+    guard shouldTranslateInputData else { return self.defaultDataTransformation(landmarks: landmarks) }
+    
+    guard let imageWidth = self.currentImageViewWidth else { return nil }
+    
+    let left = landmarks
+      .compactMap { $0.x }
+      .min() ?? 0
+  
+    let right = landmarks
+      .compactMap { $0.x }
+      .max() ?? 0
+    
+    let top = landmarks
+      .compactMap { $0.y }
+      .min() ?? 0
+    
+    guard left > 0.001, right > 0.001, top > 0.001 else { return nil }
+    
+    let widthInImage = Float(imageWidth) * (right - left)
+    
+    guard widthInImage > 0 else { return nil }
+    
+    let scaleFactor = 400 / widthInImage
+    
+    let translatedLandmarks = landmarks
+      .compactMap { lm -> [Float] in
+        return [
+          scaleFactor * (lm.x - left),
+          scaleFactor * (lm.y - top),
+          scaleFactor * lm.z
+        ]
+      }
+      .reduce([], +)
+    
+    return translatedLandmarks + sessionInfo.createEmptyFrame()
+    
+  }
+  
+  private func defaultDataTransformation(landmarks: [Landmark]) -> [Float]? {
+    return sessionInfo.captureFrame(landmarks) + sessionInfo.createEmptyFrame()
+  }
+  
   private func collect(landmarks: [Landmark]) {
-    self.dataframeBuffer.append(sessionInfo.captureFrame(landmarks) + sessionInfo.createEmptyFrame())
+    guard let dataframe = transformData(landmarks: landmarks) else { return }
+    
+    self.dataframeBuffer.append(dataframe)
     
     if self.dataframeBuffer.count == sessionInfo.dataframeSize {
       sessionInfo.dataframes.append(self.dataframeBuffer)
@@ -166,6 +225,128 @@ class CaptureSessionUIViewController: UIViewController, AVCaptureVideoDataOutput
   }
   
   // MARK: - Debug Points
+  
+  private func drawDebugPoints2(landmarks: [Landmark]) {
+    guard shouldDrawDebugPoints else { return }
+    guard let image = self.imageView.image else { return }
+    
+    let left = landmarks
+      .compactMap { $0.x }
+      .min()
+    let right = landmarks
+      .compactMap { $0.x }
+      .max()
+    
+    let top = landmarks
+      .compactMap { $0.y }
+      .min()
+    
+    guard
+      let left = left, left > 0.001,
+      let right = right, right > 0.001,
+      let top = top, top > 0.001 else { return }
+  
+    let widthInImage = Float(image.size.width) * (right - left)
+    
+    guard widthInImage > 0 else { return }
+    
+    let scaleFactor = 400 / widthInImage
+    
+    var translatedLandmarks = landmarks
+      .compactMap { lm -> (Float, Float, Float) in
+        return (
+          scaleFactor * (lm.x - left),
+          scaleFactor * (lm.y - top),
+          scaleFactor * lm.z
+        )
+      }
+    
+    var imageToViewScale: CGFloat {
+      
+      switch self.imageView.contentMode {
+      case .scaleAspectFill:
+        // if the contentMode is "aspectFill", meaning part of the image
+        // can get cropped in order to fill the whole image view.
+        //
+        // This can happen in two ways:
+        //  - the image is scale such that the image.width matches imageview.width
+        //  OR
+        //  - the image is scale such that the image.height matches imageview.height
+        
+        // suppose the scaling is based on the width
+        var scale = image.size.width / self.imageView.bounds.width
+        let imageHeightInViewCoords = image.size.height / scale
+        
+        if imageHeightInViewCoords >= self.imageView.bounds.height {
+          // When scaled to match the width, the height will get cropped,
+          // and the image will "fit" in the view completely
+          return scale
+        }
+        
+        // the sanity check here that the width is larger than the
+        // imageview width when scaled based on matching the heights
+        // is probably unnecessary since one of them has to work...
+        // but really, why not just check
+        scale =  image.size.height / self.imageView.bounds.height
+        
+        let imageWidthInViewCoords = image.size.width / scale
+        if imageWidthInViewCoords >= self.imageView.bounds.width {
+          // When scaled to match the height, the width will get cropped,
+          // and the image will "fit" in the view completely
+          return scale
+        }
+      case .scaleAspectFit:
+        // if the contentMode is "aspectFit", meaning the image will be
+        // displayed in its entirity, the remaineder will be transaparent
+        // This can happen in two ways:
+        //  - the image is scale such that the image.width matches imageview.width
+        //  OR
+        //  - the image is scale such that the image.height matches imageview.height
+        
+        // suppose the scaling is based on the width
+        var scale = image.size.width / self.imageView.bounds.width
+        let imageHeightInViewCoords = image.size.height / scale
+        
+        if imageHeightInViewCoords <= self.imageView.bounds.height {
+          // When scaled to match the width, the height will not get cropped
+          return scale
+        }
+        
+        scale =  image.size.height / self.imageView.bounds.height
+        let imageWidthInViewCoords = image.size.width / scale
+        if imageWidthInViewCoords <= self.imageView.bounds.width {
+          // When scaled to match the height, the width will not get cropped,
+          return scale
+        }
+      default:
+        break
+      }
+      
+      return -1
+    }
+    
+    guard imageToViewScale != -1 else { return }
+    
+    let combinedPath = CGMutablePath()
+    
+    translatedLandmarks
+      .compactMap { lm -> CGRect in
+        let (x, y, _) = lm
+        // The landmarks are in the image coordinate system, we want to translate them to
+        // the imageview's coordinate system
+        let x_transformed = (CGFloat(x) * image.size.width) / imageToViewScale + 20
+        let y_transformed = (CGFloat(y) * image.size.height) / imageToViewScale + 40
+        return CGRect(x: x_transformed, y: y_transformed, width: sizeVal, height: sizeVal)
+      }
+      .forEach { rect in
+        let dotPath = UIBezierPath(ovalIn: rect)
+        combinedPath.addPath(dotPath.cgPath)
+      }
+    
+    transformedPointsLayer.path = combinedPath
+    self.transformedPointsLayer.didChangeValue(for: \.path)
+    
+  }
   
   private func drawDebugPoints(landmarks: [Landmark]) {
     guard shouldDrawDebugPoints else { return }
