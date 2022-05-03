@@ -1,0 +1,13 @@
+[data_collection]
+parent_directory = no_zero2d
+gesture = E
+number_of_vids = 200
+video_source = 0
+setup_check = False
+[file_move]
+start_directory = no_zero2d2
+end_directory = no_zero2d
+move_check = True
+
+
+
