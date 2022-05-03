@@ -1,4 +1,4 @@
-//
+  //
 //  CaptureSessionUIViewController.swift
 //  Example
 //
@@ -10,8 +10,6 @@ import Foundation
 import UIKit
 import CoreML
 import AVFoundation
-
-private typealias Model = unclassified2d
 
 protocol CaptureSessionUIViewControllerDelegate: NSObjectProtocol {
   func sessionComplete(_ sessionInfo: CaptureSessionInformation!)
@@ -49,6 +47,7 @@ class CaptureSessionUIViewController: UIViewController, AVCaptureVideoDataOutput
   
   // MARK: - Transform Input Data
   private var shouldTranslateInputData: Bool = true
+  private static let factor: Float = 100
   
   fileprivate var dataframeBuffer = [[Float]]()
   private var sessionManager = SessionManager()
@@ -192,9 +191,9 @@ class CaptureSessionUIViewController: UIViewController, AVCaptureVideoDataOutput
     let translatedLandmarks = landmarks
       .compactMap { lm -> [Float] in
         return [
-          scaleFactor * (lm.x - left),
-          scaleFactor * (lm.y - top),
-          scaleFactor * lm.z
+          round(Self.factor * scaleFactor * (lm.x - left)) / Self.factor,
+          round(Self.factor * scaleFactor * (lm.y - top)) / Self.factor,
+          0 //round(Self.factor * scaleFactor * lm.z) / Self.factor
         ]
       }
       .reduce([], +)
@@ -209,6 +208,9 @@ class CaptureSessionUIViewController: UIViewController, AVCaptureVideoDataOutput
   
   private func collect(landmarks: [Landmark]) {
     guard let dataframe = transformData(landmarks: landmarks) else { return }
+    
+//    print("[Debug] -- \(landmarks[0].x) \(landmarks[0].y) \(landmarks[0].z), \(landmarks[1].x) \(landmarks[1].y) \(landmarks[1].z), \(landmarks[2].x), \(landmarks[2].y) \(landmarks[2].z)")
+//    print("[Debug] -- \(dataframe[0]) \(dataframe[1]) \(dataframe[2]), \(dataframe[3]) \(dataframe[4]) \(dataframe[5]), \(dataframe[6]), \(dataframe[7]) \(dataframe[8])")
     
     self.dataframeBuffer.append(dataframe)
     
@@ -255,9 +257,9 @@ class CaptureSessionUIViewController: UIViewController, AVCaptureVideoDataOutput
     var translatedLandmarks = landmarks
       .compactMap { lm -> (Float, Float, Float) in
         return (
-          scaleFactor * (lm.x - left),
-          scaleFactor * (lm.y - top),
-          scaleFactor * lm.z
+          round(Self.factor * scaleFactor * (lm.x - left)) / Self.factor,
+          round(Self.factor * scaleFactor * (lm.y - top)) / Self.factor,
+          round(Self.factor * scaleFactor * lm.z) / Self.factor
         )
       }
     

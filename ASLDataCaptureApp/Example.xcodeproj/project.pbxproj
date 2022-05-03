@@ -19,6 +19,9 @@
 		6B59646C281C81500020015B /* CaptureSessionUIViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6B59646B281C81500020015B /* CaptureSessionUIViewController.swift */; };
 		6B59646F281DA5920020015B /* CaptureSessionParameterStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6B59646E281DA5920020015B /* CaptureSessionParameterStore.swift */; };
 		6B596472281DD7370020015B /* CameraManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6B596471281DD7370020015B /* CameraManager.swift */; };
+		6B5964742820F5B80020015B /* ClassifySessionUIViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6B5964732820F5B80020015B /* ClassifySessionUIViewController.swift */; };
+		6B5964782821045F0020015B /* shitpost.mlmodel in Sources */ = {isa = PBXBuildFile; fileRef = 6B5964772821045F0020015B /* shitpost.mlmodel */; };
+		6B59647A28217A300020015B /* BaseSessionUIViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6B59647928217A300020015B /* BaseSessionUIViewController.swift */; };
 		6B7B098A28162D690036E6DE /* unclassified_model3.mlmodel in Sources */ = {isa = PBXBuildFile; fileRef = 6B7B098928162D690036E6DE /* unclassified_model3.mlmodel */; };
 /* End PBXBuildFile section */
 
@@ -51,6 +54,9 @@
 		6B59646B281C81500020015B /* CaptureSessionUIViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CaptureSessionUIViewController.swift; sourceTree = "<group>"; };
 		6B59646E281DA5920020015B /* CaptureSessionParameterStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CaptureSessionParameterStore.swift; sourceTree = "<group>"; };
 		6B596471281DD7370020015B /* CameraManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CameraManager.swift; sourceTree = "<group>"; };
+		6B5964732820F5B80020015B /* ClassifySessionUIViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ClassifySessionUIViewController.swift; sourceTree = "<group>"; };
+		6B5964772821045F0020015B /* shitpost.mlmodel */ = {isa = PBXFileReference; lastKnownFileType = file.mlmodel; name = shitpost.mlmodel; path = ../../../pipeline/shitpost.mlmodel; sourceTree = "<group>"; };
+		6B59647928217A300020015B /* BaseSessionUIViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BaseSessionUIViewController.swift; sourceTree = "<group>"; };
 		6B7B098928162D690036E6DE /* unclassified_model3.mlmodel */ = {isa = PBXFileReference; lastKnownFileType = file.mlmodel; path = unclassified_model3.mlmodel; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
@@ -112,6 +118,7 @@
 		6B596463281C69270020015B /* models */ = {
 			isa = PBXGroup;
 			children = (
+				6B5964772821045F0020015B /* shitpost.mlmodel */,
 				6B59645F28179BB30020015B /* unclassified2d.mlmodel */,
 				6B7B098928162D690036E6DE /* unclassified_model3.mlmodel */,
 			);
@@ -121,8 +128,10 @@
 		6B596465281C697F0020015B /* ui */ = {
 			isa = PBXGroup;
 			children = (
+				6B5964732820F5B80020015B /* ClassifySessionUIViewController.swift */,
 				6B59646B281C81500020015B /* CaptureSessionUIViewController.swift */,
 				6B596466281C6A100020015B /* CaptureOptionsUIViewController.swift */,
+				6B59647928217A300020015B /* BaseSessionUIViewController.swift */,
 			);
 			path = ui;
 			sourceTree = "<group>";
@@ -223,6 +232,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				6B59647A28217A300020015B /* BaseSessionUIViewController.swift in Sources */,
 				6B59646A281C6A7D0020015B /* CaptureSessionInformation.swift in Sources */,
 				6B596467281C6A100020015B /* CaptureOptionsUIViewController.swift in Sources */,
 				37F8488E243515D80078042B /* Camera.swift in Sources */,
@@ -232,6 +242,8 @@
 				6B59646028179BB30020015B /* unclassified2d.mlmodel in Sources */,
 				6B596472281DD7370020015B /* CameraManager.swift in Sources */,
 				6B59646F281DA5920020015B /* CaptureSessionParameterStore.swift in Sources */,
+				6B5964742820F5B80020015B /* ClassifySessionUIViewController.swift in Sources */,
+				6B5964782821045F0020015B /* shitpost.mlmodel in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

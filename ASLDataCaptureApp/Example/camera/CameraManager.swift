@@ -8,8 +8,6 @@
 
 import Foundation
 
-private typealias Model = unclassified2d
-
 class CameraManager {
   
   static let shared = CameraManager()

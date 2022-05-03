@@ -139,6 +139,8 @@ final class CaptureOptionsUIViewController: UIViewController, CaptureSessionUIVi
   private let ngrokCollectionView = CollectTextParameterUIView(label: "ngrok:")
   
   private let startButton = UIButton(frame: .zero)
+  private let classifyButton = UIButton(frame: .zero)
+  
   
   // MARK: - UI Initialization
   
@@ -192,6 +194,14 @@ final class CaptureOptionsUIViewController: UIViewController, CaptureSessionUIVi
     startButton.layer.cornerRadius = 12
   }
   
+  private func createClassifyButton() {
+    self.contentView.addSubview(classifyButton)
+    classifyButton.backgroundColor = .systemBlue
+    classifyButton.setTitle("Start Classifying", for: .normal)
+    classifyButton.addTarget(self, action: #selector(handleClassifyButtonTapped), for: .touchUpInside)
+    classifyButton.layer.cornerRadius = 12
+  }
+  
   override func viewDidLoad() {
     super.viewDidLoad()
     self.view.backgroundColor = .systemBackground
@@ -199,6 +209,7 @@ final class CaptureOptionsUIViewController: UIViewController, CaptureSessionUIVi
     self.createSamplingInformation()
     self.createNetworkInformation()
     self.createStartButton()
+    self.createClassifyButton()
   }
   
   // MARK: - UI State
@@ -251,10 +262,15 @@ final class CaptureOptionsUIViewController: UIViewController, CaptureSessionUIVi
   }
   
   private func updateStartButtonFrame() {
-    
     let xOffset = (self.contentView.frame.width - Constants.BUTTON_SIZE.width) / 2
     let yOffset = self.contentView.frame.height - Constants.BUTTON_SIZE.height
     self.startButton.frame = CGRect(x: xOffset, y: yOffset, width: Constants.BUTTON_SIZE.width, height: Constants.BUTTON_SIZE.height)
+  }
+  
+  private func updateClassifyButtonFrame() {
+    let xOffset = (self.contentView.frame.width - Constants.BUTTON_SIZE.width) / 2
+    let yOffset = self.contentView.frame.height - Constants.BUTTON_SIZE.height - Constants.BUTTON_SIZE.height - 8
+    self.classifyButton.frame = CGRect(x: xOffset, y: yOffset, width: Constants.BUTTON_SIZE.width, height: Constants.BUTTON_SIZE.height)
   }
   
   // MARK: - View Controller LifeCycle
@@ -268,6 +284,7 @@ final class CaptureOptionsUIViewController: UIViewController, CaptureSessionUIVi
     yOffset += 16
     self.updateNetworkInformationFrames(yOffset: &yOffset)
     self.updateStartButtonFrame()
+    self.updateClassifyButtonFrame()
   }
   
   // MARK: - Handle Interaction
@@ -293,6 +310,17 @@ final class CaptureOptionsUIViewController: UIViewController, CaptureSessionUIVi
       self.ngrokCollectionView,
     ]
     .forEach { $0.resignFirstResponder()}
+  }
+  
+  @objc func handleClassifyButtonTapped() {
+    let captureSessionInformation = CaptureSessionInformation(
+      label: "",
+      targetNumberOfSamples: 1000
+    )
+    
+    let vc = ClassifySessionUIViewController(sessionInfo: captureSessionInformation)
+    vc.modalPresentationStyle = .fullScreen
+    self.present(vc, animated: true)
   }
   
   @objc func handleStartButtonTapped() {
